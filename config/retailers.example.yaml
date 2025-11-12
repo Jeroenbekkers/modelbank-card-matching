@@ -1,0 +1,39 @@
+# Retailer Configuration Template
+# Copy this to retailers.yaml and fill in your retailer details
+
+bassett:
+  # Modelbank configuration
+  supplier_id: 2397                                    # Modelbank supplier ID
+  branding_id: 334116                                  # Floorplanner branding ID for styles
+
+  # Retailer information
+  name: "Bassett Furniture"
+  base_url: "https://www.bassettfurniture.com"
+
+  # File paths
+  card_path: "/home/jeroen/clients/bassett/linda-cards/product"
+  style_images_path: "/home/jeroen/clients/bassett/roomprompt examples"
+  output_path: "/home/jeroen/clients/bassett/output"
+
+  # Matching configuration (optional overrides)
+  matching:
+    name_similarity_threshold: 0.6                     # 0.0-1.0, default 0.6
+    fuzzy_sku_enabled: true
+    max_fuzzy_matches_high: 1                          # 1 match = high confidence
+    max_fuzzy_matches_medium: 3                        # 2-3 matches = medium
+    # 4+ matches = low confidence (implied)
+
+# Template for adding new retailers
+your_retailer:
+  supplier_id: null                                    # Get from Modelbank
+  branding_id: null                                    # Get from Floorplanner API
+  name: "Your Retailer Name"
+  base_url: "https://www.yourretailer.com"
+  card_path: "/path/to/retailer/linda-cards/product"
+  style_images_path: "/path/to/style/images"          # Optional
+  output_path: "/path/to/output"
+  matching:
+    name_similarity_threshold: 0.6
+    fuzzy_sku_enabled: true
+    max_fuzzy_matches_high: 1
+    max_fuzzy_matches_medium: 3
