@@ -170,6 +170,38 @@ Direct URL to product in Modelbank/Floorplanner.
 }
 ```
 
+#### `modelbank_images` (object, optional)
+CloudFront URLs for automatically generated product render images.
+
+**Format:** Object with view names as keys and image URLs as values
+
+**Available views:**
+- `iso` - Isometric view (default primary view)
+- `front` - Front view
+- `left` - Left side view
+- `top` - Top/overhead view
+
+**URL pattern:** `https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/{prefix}/{model_base}_{variant}.{view}.540.png`
+
+Where:
+- `prefix` = First 2 characters of model ID
+- `model_base` = Model ID without variant suffix
+- `variant` = Variant number (e.g., "00", "28")
+- `view` = Camera angle (iso, front, left, top)
+- `540` = Image width in pixels
+
+**Example:**
+```json
+{
+  "modelbank_images": {
+    "iso": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.iso.540.png",
+    "front": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.front.540.png",
+    "left": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.left.540.png",
+    "top": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.top.540.png"
+  }
+}
+```
+
 #### `style` (array of objects, optional)
 Design styles this product appears in.
 
@@ -229,11 +261,17 @@ Full META block for a matched product with style assignments:
 ```json
 {
   "card_role": "meta",
-  "model": "xxxx50618d1ed4f46b2fd19c67ec06b3bd00f31b_28",
+  "model": "ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00",
   "sku": "1342-3",
   "parent": "GB00095D775ZXGADN7YELEOUL3ISOPMA3SJCD6RQ",
-  "is_private": true,
-  "fp_url": "https://modelbank.floorplanner.com/products/xxxx50618d1ed4f46b2fd19c67ec06b3bd00f31b",
+  "is_private": false,
+  "fp_url": "https://modelbank.floorplanner.com/products/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9",
+  "modelbank_images": {
+    "iso": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.iso.540.png",
+    "front": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.front.540.png",
+    "left": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.left.540.png",
+    "top": "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/ad50ae3e51b0b9a35e3213ec0d4d2af1cdfe61c9_00.top.540.png"
+  },
   "style": [
     {
       "style_id": 6892,
@@ -276,6 +314,7 @@ Products without Modelbank matches are **not enriched** but are still copied to 
 | `parent` | ❌ No | ✅ Yes | Product matched to Modelbank |
 | `is_private` | ❌ No | ✅ Yes | Product matched AND is private |
 | `fp_url` | ❌ No | ✅ Yes | Product matched to Modelbank |
+| `modelbank_images` | ❌ No | ✅ Yes | Product matched to Modelbank |
 | `style` | ❌ No | ✅ Yes | Product matched AND has style assignments |
 | `related_products` | ❌ No | ✅ Yes | Product matched AND has related products |
 
@@ -294,6 +333,39 @@ if model_id:
     model_base = model_id.rsplit('_', 1)[0]
     url = f"https://modelbank.floorplanner.com/products/{model_base}"
     # Fetch full 3D model, images, specifications
+```
+
+### Displaying Product Images
+
+When showing products to users, use the Modelbank render images:
+
+```python
+# From meta card
+images = meta.get('modelbank_images', {})
+
+# Show isometric view as main image
+main_image = images.get('iso')
+if main_image:
+    display_image(main_image)
+
+# Provide additional views
+for view_name, image_url in images.items():
+    add_gallery_image(view_name, image_url)
+```
+
+**Example response:**
+```
+Emma Tufted Sofa
+[Display: https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders/ad/...iso.540.png]
+
+Additional views:
+- Front view: [front.540.png]
+- Left view: [left.540.png]
+- Top view: [top.540.png]
+
+Price: $1,999
+SKU: 1342-3
+View in 3D: https://modelbank.floorplanner.com/products/...
 ```
 
 ### Style-Based Recommendations

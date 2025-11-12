@@ -39,6 +39,54 @@ class CardEnricher:
         # Remove _XX suffix (e.g., _00, _01, _28)
         return re.sub(r'_\d{2}$', '', model)
 
+    def generate_modelbank_image_urls(
+        self,
+        model: str,
+        views: Optional[List[str]] = None,
+        size: int = 540
+    ) -> Dict[str, str]:
+        """
+        Generate Modelbank CloudFront image URLs for a product
+
+        Args:
+            model: Full model ID (e.g., "xxxx50618d1ed4f46b2fd19c67ec06b3bd00f31b_28")
+            views: List of view types (default: ['iso', 'front', 'left', 'top'])
+            size: Image width in pixels (default: 540)
+
+        Returns:
+            Dict of {view_name: image_url}
+        """
+        if not model:
+            return {}
+
+        # Extract base model (remove variant suffix)
+        model_base = self.extract_model_base(model)
+
+        # Extract variant number (e.g., "28" from "xxxx...31b_28")
+        variant_match = re.search(r'_(\d{2})$', model)
+        variant = variant_match.group(1) if variant_match else "00"
+
+        # Default views if not specified
+        # Standard Modelbank renders: iso, front, left, top
+        if views is None:
+            views = ['iso', 'front', 'left', 'top']
+
+        # CloudFront base URL
+        base_url = "https://d2bi8gvwsa8xa3.cloudfront.net/cdb/renders"
+
+        # Generate URLs for each view
+        image_urls = {}
+
+        for view in views:
+            # Get first two characters for directory structure
+            prefix = model_base[:2]
+
+            # Build URL: {base}/{prefix}/{model_base}_{variant}.{view}.{size}.png
+            url = f"{base_url}/{prefix}/{model_base}_{variant}.{view}.{size}.png"
+            image_urls[view] = url
+
+        return image_urls
+
     def build_enrichment_index(self, matches: Dict) -> Dict[str, Dict]:
         """
         Build index: filename → enrichment data
@@ -78,12 +126,17 @@ class CardEnricher:
             # Build related products list (from same styles)
             related_skus = self._find_related_products(match, matches, styles)
 
+            # Generate image URLs
+            model_id = product.get('model')
+            image_urls = self.generate_modelbank_image_urls(model_id) if model_id else {}
+
             enrichment[filename] = {
                 'model': product.get('model'),
                 'sku': cardset.get('card_sku'),
                 'parent': product.get('parent'),
                 'is_private': product.get('is_private', False),
                 'fp_url': f"https://modelbank.floorplanner.com/products/{self.extract_model_base(product.get('model', ''))}",
+                'modelbank_images': image_urls,
                 'styles': styles,
                 'related_products': sorted(list(related_skus))[:self.max_related]
             }
@@ -218,6 +271,9 @@ class CardEnricher:
 
             if enrichment.get('fp_url'):
                 meta['fp_url'] = enrichment['fp_url']
+
+            if enrichment.get('modelbank_images'):
+                meta['modelbank_images'] = enrichment['modelbank_images']
 
             if enrichment.get('styles'):
                 meta['style'] = enrichment['styles']
