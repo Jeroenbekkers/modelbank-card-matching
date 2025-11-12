@@ -230,3 +230,54 @@ class ModelbankClient:
         except requests.exceptions.RequestException as e:
             print(f"Error fetching styles: {e}")
             return []
+
+    def fetch_materials(self, limit: Optional[int] = None) -> List[Dict]:
+        """
+        Fetch materials from management API
+
+        Args:
+            limit: Max materials to fetch (None = all)
+
+        Returns:
+            List of material dicts
+        """
+        url = f"{self.api_url}/manage/product_materials"
+
+        all_materials = []
+        page = 0
+        per_page = 100
+
+        while True:
+            params = {
+                "token": self.modelbank_token,
+                "auth_token": self.auth_token,
+                "page": page,
+                "per_page": per_page
+            }
+
+            try:
+                response = requests.get(url, headers=self.headers, params=params, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+
+                materials = data.get('product_materials', [])
+                if not materials:
+                    break
+
+                all_materials.extend(materials)
+                print(f"Fetched {len(all_materials)} materials...")
+
+                # Check if we have all materials or reached limit
+                if limit and len(all_materials) >= limit:
+                    break
+
+                if len(materials) < per_page:
+                    break
+
+                page += 1
+
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching materials: {e}")
+                break
+
+        return all_materials
