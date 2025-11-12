@@ -65,7 +65,8 @@ class CLI:
         mb_config = self.credentials.get('modelbank', {})
         client = ModelbankClient(
             api_url=mb_config['api_url'],
-            auth_token=mb_config['auth_token']
+            auth_token=mb_config['auth_token'],
+            modelbank_token=mb_config.get('modelbank_token')
         )
 
         # Fetch products from Modelbank
@@ -197,7 +198,8 @@ class CLI:
         mb_config = self.credentials.get('modelbank', {})
         client = ModelbankClient(
             api_url=mb_config['api_url'],
-            auth_token=mb_config['auth_token']
+            auth_token=mb_config['auth_token'],
+            modelbank_token=mb_config.get('modelbank_token')
         )
 
         # Fetch styles from Modelbank

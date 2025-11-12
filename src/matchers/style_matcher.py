@@ -210,11 +210,18 @@ class StyleMatcher:
                 card_sku = sku_match.group(1).strip()
 
                 # Extract product name (various patterns)
-                name_match = re.search(r'<!--\s*CARD:[^>]+-->[^#]*##?\s*\*\*([^*]+)\*\*', content)
+                # Try pattern 1: **Bold text** after CARD comment
+                name_match = re.search(r'<!--\s*CARD:[^>]+-->.*?\*\*([^*]+)\*\*', content, re.DOTALL)
                 if not name_match:
-                    name_match = re.search(r'<!--\s*CARD:[^>]+-->[^#]*#\s+([^\n]+)', content)
+                    # Try pattern 2: First # heading
+                    name_match = re.search(r'^#\s+(.+?)(?:\s*-\s*Product Card Set)?$', content, re.MULTILINE)
+                if not name_match:
+                    # Try pattern 3: After META comment
+                    name_match = re.search(r'<!--\s*META:[^>]+-->.*?\*\*([^*]+)\*\*', content, re.DOTALL)
 
                 product_name = name_match.group(1).strip() if name_match else filename
+                # Clean up common suffixes
+                product_name = product_name.replace(' - Product Card Set', '').replace(' - Complete Product Card Set', '')
 
                 # Extract URL (generic pattern)
                 url_match = re.search(r'https?://[^\s\)]+', content)

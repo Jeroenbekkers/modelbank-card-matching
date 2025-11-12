@@ -221,18 +221,18 @@ class ProductMatcher:
             return []
 
         variants = self.normalize_sku_variants(card_sku)
-        matched_products = set()
+        matched_products = {}  # Use dict to deduplicate by model ID
 
         for variant in variants:
             if variant in product_sku_index:
                 for product in product_sku_index[variant]:
-                    # Store as tuple to make it hashable
-                    matched_products.add(
-                        (product.get('model'), tuple(product.items()))
-                    )
+                    # Use model ID as unique key for deduplication
+                    model_id = product.get('model') or product.get('_id') or product.get('sku')
+                    if model_id and model_id not in matched_products:
+                        matched_products[model_id] = product
 
-        # Convert back to dicts
-        return [dict(items) for _, items in matched_products]
+        # Return list of unique products
+        return list(matched_products.values())
 
     def match_by_name(self, card_name: str, products: List[Dict]) -> List[Dict]:
         """
