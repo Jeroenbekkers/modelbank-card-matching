@@ -210,8 +210,11 @@ class MaterialMatcher:
             stats: Stats dict
             output_path: Path to output report file
         """
+        import json
+
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+        # Generate text report
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(f"Material Matching Report for {self.retailer_name}\n")
             f.write("=" * 80 + "\n\n")
@@ -245,3 +248,25 @@ class MaterialMatcher:
                 f.write("\n")
 
         print(f"\nMaterial matching report saved to: {output_path}")
+
+        # Generate JSON file
+        json_path = output_path.replace('.txt', '.json')
+        json_data = {
+            'retailer': self.retailer_name,
+            'material_type': 'materials',
+            'total_cards': stats['total_cards'],
+            'total_matched': stats['matched'],
+            'total_unmatched': stats['unmatched'],
+            'match_rate': stats['match_rate'],
+            'match_types': {
+                'exact_item': stats['exact_item'],
+                'name_extracted': stats['name_extracted'],
+                'filename_extracted': stats['filename_extracted']
+            },
+            'matches': matches
+        }
+
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, indent=2)
+
+        print(f"Material matching JSON saved to: {json_path}")
