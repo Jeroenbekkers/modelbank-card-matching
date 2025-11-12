@@ -395,16 +395,26 @@ class CardEnhancer:
             'by_type': defaultdict(lambda: {'total': 0, 'enhanced': 0})
         }
 
-        # Process each card type directory
-        for card_type_dir in ['product', 'material', 'style', 'collection', 'content']:
-            type_source = source_path / card_type_dir
-            if not type_source.exists():
+        # Card types that can be enhanced with ModelBank data
+        enhanceable_types = ['product', 'material', 'style', 'collection', 'content']
+
+        # Process all subdirectories in source
+        for subdir in sorted(source_path.iterdir()):
+            if not subdir.is_dir():
                 continue
 
+            card_type_dir = subdir.name
+            type_source = subdir
             type_output = output_path / card_type_dir
             type_output.mkdir(exist_ok=True)
 
-            print(f"\nProcessing {card_type_dir} cards...")
+            # Determine if this card type can be enhanced
+            can_enhance = card_type_dir in enhanceable_types
+
+            if can_enhance:
+                print(f"\nProcessing {card_type_dir} cards...")
+            else:
+                print(f"\nCopying {card_type_dir} cards (no enhancement)...")
 
             for card_file in type_source.glob('*.md'):
                 stats['total_cards'] += 1
@@ -414,15 +424,20 @@ class CardEnhancer:
                 with open(card_file, 'r', encoding='utf-8') as f:
                     content = f.read()
 
-                # Enhance card
-                enhanced_content, was_modified = self.enhance_card(
-                    content,
-                    card_type_dir,
-                    card_file.name,
-                    product_lookup,
-                    material_lookup,
-                    style_data
-                )
+                if can_enhance:
+                    # Try to enhance card
+                    enhanced_content, was_modified = self.enhance_card(
+                        content,
+                        card_type_dir,
+                        card_file.name,
+                        product_lookup,
+                        material_lookup,
+                        style_data
+                    )
+                else:
+                    # Just copy as-is
+                    enhanced_content = content
+                    was_modified = False
 
                 # Write to output
                 output_file = type_output / card_file.name
