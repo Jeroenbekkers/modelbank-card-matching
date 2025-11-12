@@ -18,6 +18,7 @@ The output enriches product cards with Modelbank IDs, URLs, style assignments, a
 - 🎨 **Style extraction**: Extract SKUs from room images, map to products
 - 📝 **Card enrichment**: Add Modelbank data to card META blocks
 - 📈 **Deep analysis**: Gap detection, pattern analysis, quality metrics
+- ☁️ **Gemini upload**: Upload enriched cards to Google's semantic search
 - 🔧 **Configurable**: Easy to add new retailers via YAML config
 - 🧪 **Tested**: Proven on Bassett (2,103 products, 75 styles)
 
@@ -32,10 +33,13 @@ cp config/retailers.example.yaml config/retailers.yaml
 # Edit with your retailer's details
 
 # Run matching pipeline
-./scripts/run_matching.sh bassett
+./scripts/run_full_pipeline.sh bassett
+
+# Upload enriched cards to Gemini (optional)
+./scripts/upload_to_gemini.sh bassett
 
 # View results
-cat examples/bassett/output/matching_report.txt
+cat output/report.txt
 ```
 
 ## Results
@@ -96,6 +100,12 @@ Example from Bassett Furniture:
     │                     │  • Confidence breakdown
     │                     │  • Gap analysis
     │                     │  • Quality metrics
+    └────────┬────────────┘
+             │
+    ┌────────▼────────────┐
+    │  Gemini Upload      │  • Upload to semantic search
+    │  (Optional)         │  • Enable AI retrieval
+    │                     │  • Multi-retailer queries
     └─────────────────────┘
 ```
 

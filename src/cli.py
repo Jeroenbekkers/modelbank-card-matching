@@ -16,6 +16,7 @@ from matchers.product_matcher import ProductMatcher
 from matchers.style_matcher import StyleMatcher
 from enrichers.card_enricher import CardEnricher
 from analyzers.report_generator import ReportGenerator
+from uploaders.gemini_uploader import GeminiUploader
 
 
 class CLI:
@@ -368,6 +369,86 @@ class CLI:
             format
         )
 
+    def cmd_upload(self, args):
+        """Upload enriched cards to Gemini"""
+        print(f"Uploading cards for {self.config['display_name']} to Gemini...")
+        print()
+
+        # Check Gemini config
+        gemini_config = self.credentials.get('gemini')
+        if not gemini_config:
+            print("Error: Gemini configuration not found in config/api_credentials.yaml")
+            print("Add a 'gemini:' section with api_key, project_id, and optionally corpus_id")
+            sys.exit(1)
+
+        api_key = gemini_config.get('api_key')
+        project_id = gemini_config.get('project_id')
+        corpus_id = gemini_config.get('corpus_id')
+
+        if not api_key:
+            print("Error: gemini.api_key not configured")
+            sys.exit(1)
+
+        if not project_id:
+            print("Error: gemini.project_id not configured")
+            sys.exit(1)
+
+        # Initialize uploader
+        try:
+            uploader = GeminiUploader(
+                api_key=api_key,
+                project_id=project_id,
+                corpus_id=corpus_id
+            )
+        except ImportError as e:
+            print(f"Error: {e}")
+            print("Install with: pip install google-generativeai")
+            sys.exit(1)
+
+        # Create corpus if needed
+        if not corpus_id and not args.corpus_id:
+            corpus_name = args.corpus_name or f"{self.config['display_name']} Product Cards"
+            corpus_id = uploader.create_corpus(
+                display_name=corpus_name,
+                description=f"Enriched product cards for {self.config['display_name']}"
+            )
+            print(f"Created new corpus: {corpus_id}")
+            print(f"Add this to config/api_credentials.yaml under gemini.corpus_id to reuse")
+            print()
+        elif args.corpus_id:
+            uploader.corpus_id = args.corpus_id
+            print(f"Using specified corpus: {args.corpus_id}")
+
+        # Get cards directory
+        cards_dir = args.directory or f"{self.config['output_path']}/enriched_cards"
+        if not os.path.exists(cards_dir):
+            print(f"Error: Cards directory not found: {cards_dir}")
+            print("Run 'enrich' command first")
+            sys.exit(1)
+
+        # Process cards
+        card_suffix = args.card_suffix or '_cards_v7.md'
+        print(f"Processing cards from {cards_dir}...")
+        cards = uploader.process_card_directory(cards_dir, card_suffix=card_suffix)
+
+        if not cards:
+            print("No cards found to upload")
+            sys.exit(0)
+
+        # Upload
+        batch_size = args.batch_size or 100
+        rate_limit = args.rate_limit or 1.0
+
+        results = uploader.upload_cards(
+            cards,
+            batch_size=batch_size,
+            rate_limit_delay=rate_limit
+        )
+
+        print()
+        print(f"Upload complete!")
+        print(f"Corpus ID: {uploader.corpus_id}")
+
     def run(self):
         """Run CLI"""
         parser = argparse.ArgumentParser(
@@ -407,6 +488,15 @@ class CLI:
         analyze_parser.add_argument('-f', '--format', choices=['text', 'json', 'both'],
                                    help='Report format (default: both)')
 
+        # Upload command
+        upload_parser = subparsers.add_parser('upload', help='Upload enriched cards to Gemini')
+        upload_parser.add_argument('-d', '--directory', help='Cards directory (default: output/enriched_cards)')
+        upload_parser.add_argument('--corpus-id', help='Existing corpus ID to upload to')
+        upload_parser.add_argument('--corpus-name', help='Corpus name (if creating new)')
+        upload_parser.add_argument('--card-suffix', help='Card file suffix (default: _cards_v7.md)')
+        upload_parser.add_argument('--batch-size', type=int, help='Upload batch size (default: 100)')
+        upload_parser.add_argument('--rate-limit', type=float, help='Rate limit delay in seconds (default: 1.0)')
+
         args = parser.parse_args()
 
         if not args.command:
@@ -425,6 +515,8 @@ class CLI:
             self.cmd_enrich(args)
         elif args.command == 'analyze':
             self.cmd_analyze(args)
+        elif args.command == 'upload':
+            self.cmd_upload(args)
 
 
 def main():
